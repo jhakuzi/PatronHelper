@@ -59,33 +59,78 @@ clearButton:SetText("Clear List")
 frame.InsetBg:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -4, 40)
 
 -- Functions
+local listButtons = {}
+
+local function GetOrCreateListButton(index)
+    if not listButtons[index] then
+        local btn = CreateFrame("Button", nil, scrollChild)
+        btn:SetSize(scrollChild:GetWidth() - 10, 20)
+        
+        local text = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        text:SetPoint("LEFT", 0, 0)
+        text:SetJustifyH("LEFT")
+        btn.text = text
+        
+        btn:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetItemByID(self.itemID)
+            GameTooltip:Show()
+        end)
+        btn:SetScript("OnLeave", function(self)
+            GameTooltip:Hide()
+        end)
+        btn:SetScript("OnClick", function(self, button)
+            -- Support shift-clicking to paste into Chat or Auction House
+            local _, itemLink = GetItemInfo(self.itemID)
+            if itemLink and IsModifiedClick("CHATLINK") then
+                ChatEdit_InsertLink(itemLink)
+            end
+        end)
+        listButtons[index] = btn
+    end
+    return listButtons[index]
+end
+
 local function UpdateListDisplay()
+    -- Hide all existing buttons
+    for _, btn in ipairs(listButtons) do
+        btn:Hide()
+    end
+
     if not PatronHelperDB or not PatronHelperDB.shoppingList or #PatronHelperDB.shoppingList == 0 then
         listText:SetText("List is empty.")
+        listText:Show()
         return
     end
 
-    local text = ""
+    listText:Hide()
+    local yOffset = -5
+
     for i, item in ipairs(PatronHelperDB.shoppingList) do
         local itemName = item.name
-        if not itemName or itemName:find("^Item ") then
-            if C_Item and C_Item.GetItemInfo then
-                local infoName = C_Item.GetItemInfo(item.itemID)
-                if infoName then
-                    itemName = infoName
-                    item.name = itemName
-                end
-            elseif GetItemInfo then
-                local infoName = GetItemInfo(item.itemID)
-                if infoName then
-                    itemName = infoName
-                    item.name = itemName
-                end
+        local itemLink = nil
+        
+        if GetItemInfo then
+            local infoName, link = GetItemInfo(item.itemID)
+            if infoName then
+                itemName = infoName
+                item.name = itemName
+                itemLink = link
             end
         end
-        text = text .. "- " .. item.quantity .. "x " .. (itemName or "Unknown Item") .. "\n\n"
+
+        local btn = GetOrCreateListButton(i)
+        btn.itemID = item.itemID
+        
+        -- Default to bracketed name if link isn't cached yet
+        local displayText = itemLink or ("[" .. (itemName or "Unknown Item") .. "]")
+        
+        btn.text:SetText("- " .. item.quantity .. "x " .. displayText)
+        btn:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 5, yOffset)
+        btn:Show()
+        
+        yOffset = yOffset - 25
     end
-    listText:SetText(text)
 end
 
 local function ClearShoppingList()
@@ -138,19 +183,57 @@ local function AddOpenCraftingOrder()
             local validItemIDs = {}
             local baseItemID = nil
             for i, r in ipairs(slot.reagents) do
-                if r.itemID then
-                    validItemIDs[r.itemID] = true
-                    if i == 1 then baseItemID = r.itemID end -- First one is usually Tier 1
+                local rItemID = nil
+                local rCurrent = r
+                for _ = 1, 4 do
+                    if type(rCurrent) ~= "table" then
+                        if type(rCurrent) == "number" then rItemID = rCurrent end
+                        break
+                    end
+                    if rCurrent.itemID then rItemID = rCurrent.itemID; break end
+                    if rCurrent.id then rItemID = rCurrent.id; break end
+                    rCurrent = rCurrent.reagentInfo or rCurrent.reagent
+                end
+
+                if rItemID then
+                    validItemIDs[rItemID] = true
+                    if i == 1 then baseItemID = rItemID end -- First one is usually Tier 1
                 end
             end
 
             -- Calculate how many the patron provided. Anything attached to the order is provided by them.
             local provided = 0
+            local crafterEnum = Enum.CraftingOrderReagentSource and Enum.CraftingOrderReagentSource.Crafter or 1
             if order.reagents and type(order.reagents) == "table" then
                 for _, orderReagent in ipairs(order.reagents) do
-                    local itemID = orderReagent.reagent and orderReagent.reagent.itemID
-                    if itemID and validItemIDs[itemID] then
-                        provided = provided + (orderReagent.quantity or 0)
+                    -- Identify the source dynamically
+                    local source = orderReagent.source or (orderReagent.reagentInfo and orderReagent.reagentInfo.source)
+                    
+                    -- Assume provided by patron if it's explicitly not the crafter
+                    if source ~= crafterEnum then
+                        local itemID = nil
+                        local current = orderReagent
+                        
+                        -- WoW API deeply nests itemID depending on the expansion (DF, TWW 11.0, Midnight 12.0+)
+                        for _ = 1, 4 do
+                            if type(current) ~= "table" then
+                                if type(current) == "number" then itemID = current end
+                                break
+                            end
+                            if current.itemID then itemID = current.itemID; break end
+                            if current.id then itemID = current.id; break end
+                            current = current.reagentInfo or current.reagent
+                        end
+                        
+                        if itemID and validItemIDs[itemID] then
+                            -- Check every possible known location for the quantity
+                            local quantity = orderReagent.quantity
+                                          or (orderReagent.reagentInfo and orderReagent.reagentInfo.quantity)
+                                          or (orderReagent.reagentInfo and orderReagent.reagentInfo.reagent and orderReagent.reagentInfo.reagent.quantity)
+                                          or (orderReagent.reagent and type(orderReagent.reagent) == "table" and orderReagent.reagent.quantity)
+                                          or 0
+                            provided = provided + quantity
+                        end
                     end
                 end
             end
