@@ -3,6 +3,9 @@
 ## Notes: A World of Warcraft addon for managing patron crafting order shopping lists.
 ## Author: Jhakuzi
 ## Version: 1.0.0
+## IconTexture: Interface\AddOns\PatronHelper\Logo\02-logo.png
+## AddonCompartmentFunc: PatronHelper_OnAddonCompartmentClick
+## AddonCompartmentIcon: Interface\AddOns\PatronHelper\Logo\02-logo.png
 ## SavedVariables: PatronHelperDB
 
 PatronHelper.lua

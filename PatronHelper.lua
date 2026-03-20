@@ -12,6 +12,15 @@ SlashCmdList["PATRONHELPER"] = function(msg)
     end
 end
 
+-- Addon Compartment Function
+_G.PatronHelper_OnAddonCompartmentClick = function(addonName, buttonName)
+    if PatronHelperFrame:IsShown() then
+        PatronHelperFrame:Hide()
+    else
+        PatronHelperFrame:Show()
+    end
+end
+
 -- Create the main UI Frame
 local frame = CreateFrame("Frame", "PatronHelperFrame", UIParent, "BasicFrameTemplateWithInset")
 frame:SetSize(300, 400)
