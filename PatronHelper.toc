@@ -1,0 +1,8 @@
+## Interface: 120001
+## Title: Patron Helper
+## Notes: A shopping list helper Addon for Patron Crafting Orders
+## Author: Jhakuzi
+## Version: 1.0.0
+## SavedVariables: PatronHelperDB
+
+PatronHelper.lua
