@@ -1,6 +1,6 @@
 ## Interface: 120001
 ## Title: Patron Helper
-## Notes: A shopping list helper Addon for Patron Crafting Orders
+## Notes: A World of Warcraft addon for managing patron crafting order shopping lists.
 ## Author: Jhakuzi
 ## Version: 1.0.0
 ## SavedVariables: PatronHelperDB
