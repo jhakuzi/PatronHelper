@@ -69,6 +69,7 @@ frame.InsetBg:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -4, 40)
 
 -- Functions
 local listButtons = {}
+local UpdateListDisplay
 
 local function GetOrCreateListButton(index)
     if not listButtons[index] then
@@ -77,6 +78,7 @@ local function GetOrCreateListButton(index)
         
         local text = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
         text:SetPoint("LEFT", 0, 0)
+        text:SetPoint("RIGHT", -25, 0)
         text:SetJustifyH("LEFT")
         btn.text = text
         
@@ -95,12 +97,24 @@ local function GetOrCreateListButton(index)
                 ChatEdit_InsertLink(itemLink)
             end
         end)
+
+        local removeBtn = CreateFrame("Button", nil, btn, "UIPanelCloseButton")
+        removeBtn:SetSize(20, 20)
+        removeBtn:SetPoint("RIGHT", btn, "RIGHT", 0, 0)
+        removeBtn:SetScript("OnClick", function(self)
+            if btn.listIndex then
+                table.remove(PatronHelperDB.shoppingList, btn.listIndex)
+                UpdateListDisplay()
+            end
+        end)
+        btn.removeBtn = removeBtn
+
         listButtons[index] = btn
     end
     return listButtons[index]
 end
 
-local function UpdateListDisplay()
+UpdateListDisplay = function()
     -- Hide all existing buttons
     for _, btn in ipairs(listButtons) do
         btn:Hide()
@@ -130,6 +144,7 @@ local function UpdateListDisplay()
 
         local btn = GetOrCreateListButton(i)
         btn.itemID = item.itemID
+        btn.listIndex = i
         
         -- Default to bracketed name if link isn't cached yet
         local displayText = itemLink or ("[" .. (itemName or "Unknown Item") .. "]")
