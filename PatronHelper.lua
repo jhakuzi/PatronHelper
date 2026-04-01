@@ -305,21 +305,57 @@ local function AddOpenCraftingOrder()
 end
 importButton:SetScript("OnClick", AddOpenCraftingOrder)
 
--- Event Handling for DB Initialization
+-- Integration with Professions Frame
+local function SetupProfessionButton()
+    if PatronHelperProfessionButton then return end
+    if not ProfessionsFrame then return end
+
+    local btn = CreateFrame("Button", "PatronHelperProfessionButton", ProfessionsFrame, "UIPanelButtonTemplate")
+    btn:SetSize(120, 22)
+    -- Position it at the bottom to the left of the "Create All" button area
+    btn:SetPoint("BOTTOMRIGHT", ProfessionsFrame, "BOTTOMRIGHT", -320, 8)
+    btn:SetText("Patron Helper")
+
+    btn:SetScript("OnClick", function()
+        if PatronHelperFrame:IsShown() then
+            PatronHelperFrame:Hide()
+        else
+            PatronHelperFrame:Show()
+            PatronHelperFrame:ClearAllPoints()
+            PatronHelperFrame:SetPoint("TOPLEFT", ProfessionsFrame, "TOPRIGHT", 2, 0)
+        end
+    end)
+end
+
+-- Event Handling for DB Initialization and Addon Loading
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("ADDON_LOADED")
 eventFrame:SetScript("OnEvent", function(self, event, arg1)
-    if event == "ADDON_LOADED" and arg1 == addonName then
-        if not PatronHelperDB then
-            PatronHelperDB = {
-                shoppingList = {}
-            }
-        end
-        if not PatronHelperDB.shoppingList then
-            PatronHelperDB.shoppingList = {}
-        end
+    if event == "ADDON_LOADED" then
+        if arg1 == addonName then
+            if not PatronHelperDB then
+                PatronHelperDB = {
+                    shoppingList = {}
+                }
+            end
+            if not PatronHelperDB.shoppingList then
+                PatronHelperDB.shoppingList = {}
+            end
 
-        frame:SetScript("OnShow", UpdateListDisplay)
-        self:UnregisterEvent("ADDON_LOADED")
+            frame:SetScript("OnShow", UpdateListDisplay)
+            
+            local isLoaded = false
+            if C_AddOns and C_AddOns.IsAddOnLoaded then
+                isLoaded = C_AddOns.IsAddOnLoaded("Blizzard_Professions")
+            elseif IsAddOnLoaded then
+                isLoaded = IsAddOnLoaded("Blizzard_Professions")
+            end
+            
+            if isLoaded then
+                SetupProfessionButton()
+            end
+        elseif arg1 == "Blizzard_Professions" then
+            SetupProfessionButton()
+        end
     end
 end)
