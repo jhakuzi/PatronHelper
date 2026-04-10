@@ -64,8 +64,59 @@ clearButton:SetSize(100, 22)
 clearButton:SetPoint("BOTTOMRIGHT", -10, 10)
 clearButton:SetText("Clear List")
 
+local searchAHButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+searchAHButton:SetSize(120, 22)
+searchAHButton:SetPoint("BOTTOM", frame, "BOTTOM", 0, 40)
+searchAHButton:SetText("Search in AH")
+
+searchAHButton:SetScript("OnClick", function()
+    -- Checks if there are items in Patron Helper shopping list
+    if not PatronHelperDB.shoppingList or #PatronHelperDB.shoppingList == 0 then
+        print("|cFF00FFFF[Patron Helper]|r Your shopping list is empty.")
+        return
+    end
+
+    -- Checks if auctionator is installed, enabled and has the API
+    if not Auctionator or not Auctionator.API or not Auctionator.API.v1 then
+        print("|cFF00FFFF[Patron Helper]|r Auctionator not found or incompatible API.")
+        return
+    end
+
+    local advancedSearchTerms = {}
+    local fallbackTerms = {}
+    
+    -- Checks your list, saves and extract names and quantities
+    for _, item in ipairs(PatronHelperDB.shoppingList) do
+        if item.name then
+            -- Creates the advanced search object, needed for Auctionator
+            table.insert(advancedSearchTerms, {
+                searchString = item.name,
+                isExact = true,
+                quantity = item.quantity
+            })
+            -- Saves the name only. In case of Auctionator is out of date
+            table.insert(fallbackTerms, item.name)
+        end
+    end
+
+    if #advancedSearchTerms == 0 then 
+        print("|cFF00FFFF[Patron Helper]|r No valid items in the list.")
+        return 
+    end
+
+    -- Tries to use the advanced API for correct quantity. 
+    -- If your Auctionator version doesn't have this API, it performs a smart fallback.
+    if Auctionator.API.v1.MultiSearchAdvanced then
+        Auctionator.API.v1.MultiSearchAdvanced("PatronHelper", advancedSearchTerms)
+    elseif Auctionator.API.v1.MultiSearchExact then
+        Auctionator.API.v1.MultiSearchExact("PatronHelper", fallbackTerms)
+    elseif Auctionator.API.v1.MultiSearch then
+        Auctionator.API.v1.MultiSearch("PatronHelper", fallbackTerms)
+    end
+end)
+
 -- Adjust inset bottom so text/scrollframe doesn't overlap the buttons
-frame.InsetBg:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -4, 40)
+frame.InsetBg:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -4, 70)
 
 -- Functions
 local listButtons = {}
