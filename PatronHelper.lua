@@ -368,12 +368,42 @@ local function SetupProfessionButton()
     btn:SetText("Patron Helper")
 
     btn:SetScript("OnClick", function()
-        if PatronHelperFrame:IsShown() then
+        if PatronHelperFrame:IsShown() and PatronHelperFrame.lastOpenedFrom == "Professions" then
             PatronHelperFrame:Hide()
+            PatronHelperFrame.lastOpenedFrom = nil
         else
             PatronHelperFrame:Show()
             PatronHelperFrame:ClearAllPoints()
             PatronHelperFrame:SetPoint("TOPLEFT", ProfessionsFrame, "TOPRIGHT", 2, 0)
+            PatronHelperFrame.lastOpenedFrom = "Professions"
+        end
+    end)
+end
+
+-- Integration with Auction House Frame
+local function SetupAuctionHouseButton()
+    if PatronHelperAHButton then return end
+    if not AuctionHouseFrame then return end
+
+    local btn = CreateFrame("Button", "PatronHelperAHButton", AuctionHouseFrame, "UIPanelButtonTemplate")
+    btn:SetSize(95, 22)
+    -- Position it to the left of the "Filter" button
+    if AuctionHouseFrame.SearchBar and AuctionHouseFrame.SearchBar.FilterButton then
+        btn:SetPoint("RIGHT", AuctionHouseFrame.SearchBar.FilterButton, "LEFT", -5, 0)
+    else
+        btn:SetPoint("TOPRIGHT", AuctionHouseFrame, "TOPRIGHT", -36, -6)
+    end
+    btn:SetText("Patron Helper")
+
+    btn:SetScript("OnClick", function()
+        if PatronHelperFrame:IsShown() and PatronHelperFrame.lastOpenedFrom == "AuctionHouse" then
+            PatronHelperFrame:Hide()
+            PatronHelperFrame.lastOpenedFrom = nil
+        else
+            PatronHelperFrame:Show()
+            PatronHelperFrame:ClearAllPoints()
+            PatronHelperFrame:SetPoint("TOPLEFT", AuctionHouseFrame, "TOPRIGHT", 2, 0)
+            PatronHelperFrame.lastOpenedFrom = "AuctionHouse"
         end
     end)
 end
@@ -396,17 +426,25 @@ eventFrame:SetScript("OnEvent", function(self, event, arg1)
             frame:SetScript("OnShow", UpdateListDisplay)
             
             local isLoaded = false
+            local isAHLoaded = false
             if C_AddOns and C_AddOns.IsAddOnLoaded then
                 isLoaded = C_AddOns.IsAddOnLoaded("Blizzard_Professions")
+                isAHLoaded = C_AddOns.IsAddOnLoaded("Blizzard_AuctionHouseUI")
             elseif IsAddOnLoaded then
                 isLoaded = IsAddOnLoaded("Blizzard_Professions")
+                isAHLoaded = IsAddOnLoaded("Blizzard_AuctionHouseUI")
             end
             
             if isLoaded then
                 SetupProfessionButton()
             end
+            if isAHLoaded then
+                SetupAuctionHouseButton()
+            end
         elseif arg1 == "Blizzard_Professions" then
             SetupProfessionButton()
+        elseif arg1 == "Blizzard_AuctionHouseUI" then
+            SetupAuctionHouseButton()
         end
     end
 end)
