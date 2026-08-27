@@ -2,7 +2,9 @@
 ## Title: Patron Helper
 ## Notes: A World of Warcraft addon for managing a shopping list for crafting orders.
 ## Author: Jhakuzi
-## Version: 1.2
+## Version: 1.3
+## Category: Professions
+## OptionalDeps: Auctionator
 ## IconTexture: Interface\AddOns\PatronHelper\Logo\02-logo.png
 ## AddonCompartmentFunc: PatronHelper_OnAddonCompartmentClick
 ## AddonCompartmentIcon: Interface\AddOns\PatronHelper\Logo\02-logo.png
